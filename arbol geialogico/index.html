@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Árbol Familiar</title>
+    <style>
+        /* Estilos base y reseteo */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif; /* Usando una fuente moderna y legible */
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Estilo del encabezado */
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+
+        /* Contenedor del árbol */
+        .tree-container {
+            background: rgba(233, 180, 240, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1200px;
+            width: 95%; /* Ancho responsivo */
+        }
+
+        /* Disposición de cada generación */
+        .generation {
+            display: flex;
+            flex-wrap: wrap; 
+            justify-content: center;
+            margin-bottom: 60px;
+            position: relative;
+            gap: 20px; /* Espacio entre las tarjetas */
+        }
+
+        .generation::before {
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            width: 2px;
+            height: 30px;
+            background: #8b7355;
+            transform: translateX(-50%);
+        }
+
+        .generation:first-child::before {
+            display: none;
+        }
+
+        /* Estilo de la tarjeta de persona */
+        .person-card {
+            background: linear-gradient(145deg, #eca8c8, #ffffff);
+            border: 3px solid #8b7355;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            min-width: 180px;
+            flex: 1 1 180px; 
+        }
+
+        .person-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            border-color: #667eea;
+        }
+
+        .person-card::before {
+            content: '👤';
+            font-size: 3em;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .person-card h3 {
+            color: #333;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        .person-card p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .generation-label {
+            text-align: center;
+            color: #8b7355;
+            font-weight: bold;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ------------------------------------- */
+        /* ESTILOS DE PÁGINA DE PERFIL (Foto Lateral) */
+        /* ------------------------------------- */
+        .profile-page {
+            display: none;
+            background: white;
+            border-radius: 20px;
+            padding: 40px; /* Restaurar padding normal */
+            max-width: 800px;
+            margin: 20px auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden; 
+        }
+
+        .profile-page.active {
+            display: block;
+        }
+        
+        /* Contenedor principal del encabezado del perfil con la foto */
+        .profile-main-info {
+            display: flex; /* Para poner la foto y el texto lado a lado */
+            align-items: flex-start; /* Alinear arriba */
+            gap: 30px; /* Espacio entre la foto y el texto */
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            flex-wrap: wrap; /* Para que en pantallas pequeñas se apilen */
+        }
+
+        /* Contenedor de la foto de perfil */
+        .profile-photo-container {
+            flex-shrink: 0; /* Evita que la foto se encoja */
+            width: 200px; /* Ancho fijo para la foto */
+            height: 200px; /* Altura fija para la foto */
+            border-radius: 10px; /* Borde ligeramente redondeado para la foto */
+            overflow: hidden;
+            background: linear-gradient(145deg, #667eea, #764ba2); /* Fondo por si la imagen falla */
+            border: 3px solid #8b7355;
+            display: flex; /* Para centrar la imagen dentro si es más pequeña */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .profile-photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Mantiene la relación de aspecto sin recortar, añade barras si es necesario */
+            background-color: #fff; /* Fondo blanco para las barras si object-fit: contain las crea */
+        }
+
+        /* Estilo para placeholder de imagen que falla o no existe */
+        .profile-photo-container.placeholder {
+            color: white;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Información de texto del perfil */
+        .profile-info {
+            flex-grow: 1; /* Ocupa el espacio restante */
+            text-align: left; /* Alinear texto a la izquierda */
+        }
+
+        .profile-info h2 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .profile-info p {
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .profile-description {
+            color: #444;
+            line-height: 1.8;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+
+        .back-button {
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .tree-view {
+            display: block;
+        }
+
+        .tree-view.hidden {
+            display: none;
+        }
+        
+        /* Ajustes responsivos */
+        @media (max-width: 768px) {
+            .profile-main-info {
+                flex-direction: column; /* Apilar la foto y el texto en móvil */
+                align-items: center;
+                text-align: center;
+                gap: 20px;
+            }
+            .profile-info {
+                text-align: center; /* Centrar texto en móvil */
+            }
+            .profile-photo-container {
+                width: 150px; /* Tamaño de foto más pequeño en móvil */
+                height: 150px;
+            }
+            .generation {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+            .person-card {
+                width: 90%;
+                min-width: unset;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Vista del Árbol Genealógico --><div class="tree-view" id="treeView">
+        <div class="header">
+            <h1> my family tree 🌳</h1>
+            <p>Click to learn about each person's routine.</p>
+        </div>
+
+        <div class="tree-container">
+            <!-- Primera Generación: Abuelos Paternos --><div class="generation-label">Paternal Grandparents</div>
+            <div class="generation">
+                <div class="person-card" onclick="showProfile('bisabuelo1')">
+                    <h3>Miguel Galaraga </h3>
+                    <p>Paternal Grandfather</p>
+                </div>
+                <div class="person-card" onclick="showProfile('bisabuela1')">
+                    <h3>Sofia Montes</h3>
+                    <p>Paternal grandmother</p>
+                </div>
+            </div>
+
+            <!-- Segunda Generación: Abuelos Maternos --><div class="generation-label">Maternal Grandparents</div>
+            <div class="generation">
+                <div class="person-card" onclick="showProfile('abuelo1')">
+                    <h3>Francisco Burgos </h3>
+                    <p>Maternal Grandfather</p>
+                </div>
+                <div class="person-card" onclick="showProfile('abuela1')">
+                    <h3>Regina Martínez </h3>
+                    <p>Maternal grandmother</p>
+                </div>
+            </div>
+
+            <!-- Tercera Generación: Padres --><div class="generation-label">parents</div>
+            <div class="generation">
+                <div class="person-card" onclick="showProfile('padre')">
+                    <h3>Luis Galaraga</h3>
+                    <p>father</p>
+                </div>
+                <div class="person-card" onclick="showProfile('madre')">
+                    <h3>Luisina Burgos </h3>
+                    <p>Mother</p>
+                </div>
+            </div>
+
+            <!-- Cuarta Generación: Hijos --><div class="generation-label">Hijos</div>
+            <div class="generation">
+                <div class="person-card" onclick="showProfile('hijo1')">
+                    <h3>Luisa Galaraga </h3>
+                    <p>Eldest daughter</p>
+                </div>
+                <div class="person-card" onclick="showProfile('hijo2')">
+                    <h3>Luis Galaraga</h3>
+                    <p>Youngest Son</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Páginas de Perfil --><!-- Perfil: Abuelo Paterno (Miguel Galaraga) --><div class="profile-page" id="bisabuelo1">
+        <div class="profile-main-info">
+            <div class="profile-photo-container">
+                <img src="img/miguel.jpg" alt="Miguel Galaraga Foto">
+            </div>
+            <div class="profile-info">
+                <h2>Miguel Galaraga</h2>
+                <p>Paternal Grandfather</p>
+                <p>1943 - present</p>
+            </div>
+        </div>
+        <div class="profile-description">
+            <h3>your daily routine</h3>
+            <p>He wakes up early and has his breakfast. He spends most of his day on the terrace with his coffee, his Sudoku, and his crossword puzzles. He takes short breaks to walk around or to eat lunch with the family. After resting for a bit, he returns to the terrace to solve more puzzles. In the evening, he eats dinner, watches television, and then goes to sleep.</p>
+            <br>
+            <p><strong>occupation:</strong> retired<br>
+            <strong>place of birth:</strong> San Carlos- Cordoba<br>
+            <strong>legacy:</strong> a large family</p>
+        </div>
+        <button class="back-button" onclick="showTree()">← go back to the tree</button>
+    </div>
+
+    <!-- Perfil: Abuela Paterna (Sofia Montes) --><div class="profile-page" id="bisabuela1">
+        <div class="profile-main-info">
+            <div class="profile-photo-container">
+                <img src="img/sofia.jpg" alt="Sofia Montes Foto">
+            </div>
+            <div class="profile-info">
+                <h2>Sofia Montes</h2>
+                <p>Paternal grandmother</p>
+                <p>1949 - present</p>
+            </div>
+        </div>
+        <div class="profile-description">
+            <h3>your daily routine</h3>
+            <p>Sofia Montes She wakes up and helps her grandchild with the great-grandchild. She spends the morning playing with the baby or taking care of him. She enjoys this time very much. After lunch, when the baby sleeps, she takes a rest. In the afternoon, she sits on the porch or watches her favorite TV shows. She lives a peaceful life and feels happy to be close to her family.</p>
+            <br>
+            <p><strong>Occupation:</strong> housewife<br>
+            <strong>place of birth:</strong> El cerrito - cordoba <br>
+            <strong>Legacy:</strong> a loving and family-oriented mother</p>
+        </div>
+        <button class="back-button" onclick="showTree()">← go back to the tree</button>
+    </div>
+
+    <!-- Perfil: Abuelo Materno (Francisco Burgos) --><div class="profile-page" id="abuelo1">
+        <div class="profile-main-info">
+            <div class="profile-photo-container">
+                <img src="img/francisco.jpg" alt="Francisco Burgos Foto">
+            </div>
+            <div class="profile-info">
+                <h2>Francisco Burgos</h2>
+                <p>Maternal Grandfather</p>
+                <p>1942 - Present</p>
+            </div>
+        </div>
+        <div class="profile-description">
+            <h3>your daily routine</h3>
+            <p>Enjoy a very peaceful and creative day. In the morning, spend time at your desk. Work calmly on your crafts, creating beautiful things with your hands. Take many breaks. When you feel tired, stop to rest. In the afternoon, relax in your hammock chair, listen to the radio, take a long nap, or read the Bible. Your day is very peaceful and calm.</p>
+            <br>
+            <p><strong>occupation:</strong> craftsman<br>
+            <strong>place of birth:</strong> puerto escondido - cordoba <br>
+            <strong>hobby :</strong> crafts, read</p>
+        </div>
+        <button class="back-button" onclick="showTree()">← go back to the tree</button>
+    </div>
+
+    <!-- Perfil: Abuela Materna (Regina Martínez) --><div class="profile-page" id="abuela1">
+        <div class="profile-main-info">
+            <div class="profile-photo-container">
+                <img src="img/regina.jpg" alt="Regina Martínez Foto">
+            </div>
+            <div class="profile-info">
+                <h2>Regina Martínez</h2>
+                <p> Maternal grandmother</p>
+                <p>1947 - Present</p>
+            </div>
+        </div>
+        <div class="profile-description">
+            <h3>your daily routine</h3>
+            <p>She lives alone, but her house is always busy. She runs a small business from her home, selling 'bolis' (ice pops) and water to the neighbors. In the morning, she prepares everything for her sales. She spends the day attending to her customers, often chatting with them from her door. She cooks her own meals and manages her house. She gets regular visits from her children and grandchildren. She loves when they come over; her house fills with conversation and laughter. At night, she counts her money, watches TV, and rests.</p>
+            <br>
+            <p><strong>Occupation:</strong> businessman<br>
+            <strong>place of birth:</strong> arboletes- antioquia<br>
+            <strong>hobby:</strong> cook</p>
+        </div>
+        <button class="back-button" onclick="showTree()">← go back to the tree</button>
+    </div>
+
+    <!-- Perfil: Padre (Luis Galaraga) --><div class="profile-page" id="padre">
+        <div class="profile-main-info">
+            <div class="profile-photo-container">
+                <img src="img/luis.jpg" alt="Luis Galaraga Foto">
+            </div>
+            <div class="profile-info">
+                <h2>Luis Miguel Galaraga</h2>
+                <p>Father</p>
+                <p>1969 - Present</p>
+            </div>
+        </div>
+        <div class="profile-description">
+            <h3>your daily routine</h3>
+            <p>His daily life changes every week because of his security job. On his day shift week, he wakes up early and goes to work. He comes home in the evening. On his night shift week, he sleeps during the day and works all night.
+
+In his free time, he is the handyman of the house. He likes to fix anything that is broken, like a leaky faucet or a broken chair. He also spends a lot of time on his cell phone, scrolling through social media to relax and connect with people.</p>
+            <br>
+            <p><strong>Occupation:</strong> concierge and security guard<br>
+            <strong>place of birth:</strong> Monteria - Cordoba<br>
+            <strong>goals:</strong> study pure mathematics</p>
+        </div>
+        <button class="back-button" onclick="showTree()">← go back to the tree</button>
+    </div>
+
+    <!-- Perfil: Madre (Luisina Burgos) --><div class="profile-page" id="madre">
+        <div class="profile-main-info">
+            <div class="profile-photo-container">
+                <img src="img/luisina.jpg" alt="Luisina Burgos Foto">
+            </div>
+            <div class="profile-info">
+                <h2>Luisina Burgos</h2>
+                <p>Mother</p>
+                <p>1975 - Presente</p>
+            </div>
+        </div>
+        <div class="profile-description">
+            <h3>your daily routine</h3>
+            <p>She works hard as a housekeeper (or "domestic employee") in a family's home. When she returns home, her family gets to enjoy her best talent: she cooks delicious food. In her free time, she is very creative; she sews and mends clothes for the family. When she wants to relax and clear her mind, she sits comfortably, takes out her phone, and plays Candy Crush.</p>
+            <br>
+            <p><strong>Occupation:</strong> domestic employee<br>
+            <strong>place of birth:</strong> arboletes<br>
+            <strong>goals:</strong> learn how to do appliance maintenance</p>
+        </div>
+        <button class="back-button" onclick="showTree()">← go back to the tree</button>
+    </div>
+
+    <!-- Perfil: Hija Mayor (Luisa Galaraga) --><div class="profile-page" id="hijo1">
+        <div class="profile-main-info">
+            <div class="profile-photo-container">
+                <img src="img/luisa.jpg" alt="Luisa Galaraga Foto">
+            </div>
+            <div class="profile-info">
+                <h2>Luisa Galaraga</h2>
+                <p>eldest daughter</p>
+                <p>1998 - Presente</p>
+            </div>
+        </div>
+        <div class="profile-description">
+            <h3>your daily routine</h3>
+            <p>The oldest daughter is 27 years old, and she leads a very active and balanced life. She dedicates a lot of time to her education, as she studies Spanish Language (Lengua Castellana) at university.
+
+At the same time, she is very independent. She works as an independent teacher, giving private lessons or tutoring to other students.
+
+When she has free time, she expresses her creativity. She enjoys making different handicrafts. For relaxation, she has several hobbies. She listens to podcasts to learn new things or just to be entertained. She is also a big fan of Asian dramas (like K-dramas) and spends her evenings watching their stories. Finally, she understands the importance of rest; she values her free time and enjoys sleeping to recharge her energy.</p>
+            <br>
+            <p><strong>studies:</strong> Bachelor's degree in Spanish language almost finished<br>
+            <strong>place of birth:</strong> monteria cordobax<br>
+            <strong>hobbies:</strong> watch dramas, read, listen to music</p>
+        </div>
+        <button class="back-button" onclick="showTree()">← go back to the tree </button>
+    </div>
+
+    <!-- Perfil: Hijo Menor (Luis Galaraga) --><div class="profile-page" id="hijo2">
+        <div class="profile-main-info">
+            <div class="profile-photo-container">
+                <img src="img/daniel.jpg" alt="Luis Galaraga Foto">
+            </div>
+            <div class="profile-info">
+                <h2>Luis Galaraga</h2>
+                <p>Youngest Son</p>
+                <p>2002 - Present</p>
+            </div>
+        </div>
+        <div class="profile-description">
+            <h3>my daily routine </h3>
+            <p>I wake up in the morning. The first thing I do is put on music; I listen to my favorite songs while I get ready for the day.
+
+I'm a computer science student, so I spend most of the day attending classes or studying programming and technology.
+
+In my free time between classes, I take the opportunity to read manga. When I study or travel by bus, I always wear headphones and listen to music.
+
+In the afternoon, I like to take a nap to recharge my batteries.
+
+After my nap, I like to socialize. I text my friends and we make plans to meet up, chat, or just hang out. When I'm at home, I relax by reading more manga or searching for new music online before going to sleep.</p>
+            <br>
+            <p><strong>Estudies:</strong> degree in computer science<br>
+            <strong>place of birth :</strong> monteria - cordoba <br>
+            <strong>goals:</strong> have my own motorcycle, work as a teacher, being a dad to a beautiful little girl</p>
+        </div>
+        <button class="back-button" onclick="showTree()">← go back to the tree</button>
+    </div>
+
+    <script>
+        function showProfile(profileId) {
+            document.getElementById('treeView').classList.add('hidden');
+            document.querySelectorAll('.profile-page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(profileId).classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function showTree() {
+            document.getElementById('treeView').classList.remove('hidden');
+            document.querySelectorAll('.profile-page').forEach(page => {
+                page.classList.remove('active');
+            });
+            window.scrollTo(0, 0);
+        }
+    </script>
+</body>
+</html>
